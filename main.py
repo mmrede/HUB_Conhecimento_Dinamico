@@ -1,5 +1,6 @@
 # 1. Primeiro, os imports
 from fastapi import FastAPI, Depends, HTTPException
+import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 from typing import List
@@ -29,10 +30,12 @@ class Parceria(pydantic.BaseModel):
     cpf_cnpj: str | None
     razao_social: str | None
     objeto: str | None
+    plano_de_trabalho: str | None
     data_da_assinatura: date | None
     data_de_publicacao: date | None
     vigencia: date | None
     situacao: str | None
+    similarity_score: float | None = None  # Opcional, usado apenas em busca semântica
 
     class Config:
         from_attributes = True
@@ -71,7 +74,8 @@ class SimilaridadeResponse(pydantic.BaseModel):
         from_attributes = True
 
 # --- Configuração do Banco de Dados ---
-DB_CONNECTION_STRING = "postgresql://postgres:rx1800@localhost:5433/hub_aura_db"
+# Usa variável de ambiente DATABASE_URL; se não definida, usa fallback local (desenvolvimento)
+DB_CONNECTION_STRING = os.getenv("DATABASE_URL", "postgresql://postgres:rx1800@localhost:5433/hub_aura_db")
 engine = create_engine(DB_CONNECTION_STRING)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -227,10 +231,16 @@ def obter_parcerias_por_situacao(db: Session = Depends(get_db)):
 
 # BUSCA SEMÂNTICA (deve vir ANTES de rotas com path parameters como {parceria_id})
 @app.get("/api/v1/parcerias/semantic-busca", response_model=BuscaResponse)
-def busca_semantica(termo: str, db: Session = Depends(get_db), skip: int = 0, limit: int = 10, ano: int | None = None):
+def busca_semantica(termo: str, db: Session = Depends(get_db), skip: int = 0, limit: int = 10, ano: int | None = None, version: str = "v3"):
     """
-    Busca semântica que utiliza embeddings v2 (sentence-transformers, 384 dims) para retornar parcerias ordenadas por similaridade.
-    Funciona bem com palavras isoladas E com frases de contexto.
+    Busca semântica que utiliza embeddings enriquecidos (objeto + plano_de_trabalho) para retornar parcerias ordenadas por similaridade.
+    
+    Args:
+        termo: Termo de busca
+        skip: Offset para paginação
+        limit: Limite de resultados
+        ano: Filtro opcional por ano
+        version: Versão dos embeddings (v2=apenas objeto, v3=objeto+plano). Default: v3
     """
     try:
         # Gerar embedding do termo usando o modelo global cacheado
@@ -252,42 +262,54 @@ def busca_semantica(termo: str, db: Session = Depends(get_db), skip: int = 0, li
             params["ano"] = ano
         p_where_sql = ("WHERE " + " AND ".join(p_filters)) if p_filters else ""
 
-        # Filtro para a tabela de vetores
-        dv_where_sql = "WHERE dv.objeto_vetor_v2 IS NOT NULL"
-
-        # IMPORTANTE: A coluna objeto_vetor_v2 é FLOAT[]; portanto não podemos usar operador <=> do pgvector.
+        # Escolher coluna de vetor baseado na versão
+        vetor_col = "objeto_vetor_v3" if version == "v3" else "objeto_vetor_v2"
+        
+        # IMPORTANTE: A coluna objeto_vetor_v3 é FLOAT[]; portanto não podemos usar operador <=> do pgvector.
         # Calculamos a similaridade do cosseno via unnest das arrays e ordenamos pela maior similaridade.
+        # DEDUPLICAÇÃO: Usa DISTINCT ON para garantir apenas um embedding por parceria_id
+        # FALLBACK: Se v3 não existir, tenta v2
         sql = text(f"""
             WITH q AS (
                 SELECT CAST(:query_vector AS float8[]) AS v, CAST(:q_norm AS float8) AS qn
+            ),
+            deduplicated_vectors AS (
+                SELECT DISTINCT ON (parceria_id) 
+                    parceria_id, 
+                    COALESCE({vetor_col}, objeto_vetor_v2) as vetor
+                FROM documento_vetores
+                WHERE COALESCE({vetor_col}, objeto_vetor_v2) IS NOT NULL
+                ORDER BY parceria_id
             ),
             agg AS (
                 SELECT 
                     dv.parceria_id,
                     SUM(dv_elt.dv_v * q_elt.q_v) AS dot,
                     sqrt(SUM(dv_elt.dv_v * dv_elt.dv_v)) AS dn
-                FROM documento_vetores dv
+                FROM deduplicated_vectors dv
                 JOIN q ON TRUE
-                JOIN LATERAL unnest(dv.objeto_vetor_v2) WITH ORDINALITY AS dv_elt(dv_v, idx) ON TRUE
+                JOIN LATERAL unnest(dv.vetor) WITH ORDINALITY AS dv_elt(dv_v, idx) ON TRUE
                 JOIN LATERAL unnest((SELECT v FROM q)) WITH ORDINALITY AS q_elt(q_v, idx2) ON idx = idx2
-                {dv_where_sql}
                 GROUP BY dv.parceria_id
             )
-            SELECT p.*, (dot / NULLIF(dn * (SELECT qn FROM q), 0)) AS score
+            SELECT p.*, (dot / NULLIF(dn * (SELECT qn FROM q), 0)) AS similarity_score
             FROM agg a
             JOIN instrumentos_parceria p ON p.id = a.parceria_id
             {p_where_sql}
-            ORDER BY score DESC NULLS LAST
+            ORDER BY similarity_score DESC NULLS LAST
             LIMIT :limit OFFSET :skip
         """)
 
         result = db.execute(sql, params)
         rows = result.mappings().all()
 
-        # Extrai apenas os campos de parceria para o cliente (descarta 'score' do mapeamento se presente)
+        # Inclui o score de similaridade nos resultados
         items = []
         for r in rows:
-            item = {k: v for k, v in r.items() if k != 'score'}
+            item = dict(r)
+            # Arredondar similarity_score para 4 casas decimais
+            if 'similarity_score' in item and item['similarity_score'] is not None:
+                item['similarity_score'] = round(float(item['similarity_score']), 4)
             items.append(item)
 
         total_items = len(items)
@@ -336,8 +358,20 @@ async def processar_documento(file: UploadFile = File(...)):
     TRIBUNAL_CNPJ = "21.154.877/0001-07"
 
     try:
+        # --- VALIDAÇÕES INICIAIS DO UPLOAD ---
+        # 1) Verificar content-type informado
+        allowed_types = {"application/pdf", "application/x-pdf", "application/acrobat", "applications/pdf", "text/pdf"}
+        if file.content_type and file.content_type.lower() not in allowed_types:
+            raise HTTPException(status_code=415, detail="Tipo de arquivo não suportado. Envie um PDF.")
+
         # --- ETAPA 1: Extração e Limpeza (sem alterações) ---
         conteudo_arquivo = await file.read()
+
+        # 2) Verificar tamanho máximo (10MB)
+        MAX_FILE_SIZE = 10 * 1024 * 1024
+        if len(conteudo_arquivo) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=413, detail="Arquivo muito grande. Tamanho máximo: 10MB.")
+
         pdf_stream = io.BytesIO(conteudo_arquivo)
         reader = PyPDF2.PdfReader(pdf_stream)
         texto_completo_original = "".join([page.extract_text() or "" for page in reader.pages])
@@ -490,6 +524,7 @@ class ParceriaCreate(pydantic.BaseModel):
     # Adicionando os novos campos (que podem ser nulos ou vazios)
     cpf_cnpj: str | None = None
     ano_do_termo: int | None = None
+    plano_de_trabalho: str | None = None
 
     # Adicione outros campos aqui conforme seu formulário evoluir
 
@@ -564,6 +599,7 @@ def obter_documentos_similares(
         raise HTTPException(status_code=500, detail="Erro ao consultar similaridades")
 
 
+@app.post("/api/v1/parcerias", response_model=Parceria)
 def criar_parceria(parceria: ParceriaCreate, db: Session = Depends(get_db)):
     """
     Cria um novo registro de parceria com os dados validados e calcula similaridades usando pgvector.
@@ -571,8 +607,8 @@ def criar_parceria(parceria: ParceriaCreate, db: Session = Depends(get_db)):
     try:
         # 1. Inserir a parceria
         query = text("""
-            INSERT INTO instrumentos_parceria (razao_social, objeto, cpf_cnpj, ano_do_termo, situacao)
-            VALUES (:razao_social, :objeto, :cpf_cnpj, :ano_do_termo, :situacao)
+            INSERT INTO instrumentos_parceria (razao_social, objeto, cpf_cnpj, ano_do_termo, situacao, plano_de_trabalho)
+            VALUES (:razao_social, :objeto, :cpf_cnpj, :ano_do_termo, :situacao, :plano_de_trabalho)
             RETURNING *;
         """)
         params = {
@@ -580,7 +616,8 @@ def criar_parceria(parceria: ParceriaCreate, db: Session = Depends(get_db)):
             "objeto": parceria.objeto,
             "cpf_cnpj": parceria.cpf_cnpj,
             "ano_do_termo": parceria.ano_do_termo,
-            "situacao": "Cadastrado via IA"
+            "situacao": "Cadastrado via IA",
+            "plano_de_trabalho": parceria.plano_de_trabalho
         }
         result = db.execute(query, params)
         novo_registro = result.mappings().first()

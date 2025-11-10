@@ -12,6 +12,8 @@ interface Parceria {
   razao_social: string | null;
   objeto: string | null;
   ano_do_termo: number | null;
+  plano_de_trabalho?: string | null;
+  similarity_score?: number | null;
 }
 
 const PaginaBusca = () => {

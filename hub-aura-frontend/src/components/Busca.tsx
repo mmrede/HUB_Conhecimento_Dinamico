@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { TextField, Button, Box, FormControlLabel, Switch, Tooltip, Typography } from '@mui/material';
+import { TextField, Button, Box, FormControlLabel, Switch, Tooltip, Typography, CircularProgress } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 
 // Adicionamos a propriedade 'loading' para controlar o estado de desabilitado.
 interface BuscaProps {
@@ -29,24 +30,31 @@ const Busca = ({ onSearch, loading }: BuscaProps) => {
           label="Buscar por termo, objeto ou parceiro..."
           value={termo}
           onChange={(e) => setTermo(e.target.value)}
-          // Desabilita o campo se 'loading' for verdadeiro.
-          disabled={loading} 
+          disabled={loading}
+          InputProps={{
+            endAdornment: loading ? (
+              <CircularProgress size={20} />
+            ) : null,
+          }}
         />
         <Button 
           type="submit" 
           variant="contained" 
           size="large"
-          // Desabilita o botão se 'loading' for verdadeiro.
           disabled={loading}
+          startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SearchIcon />}
+          sx={{ minWidth: '120px' }}
         >
-          Buscar
+          {loading ? 'Buscando...' : 'Buscar'}
         </Button>
       </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="body2" color="text.secondary">
-          Dica: frases funcionam melhor com a Busca Semântica (IA)
+          {buscaSemantica 
+            ? "✨ Busca enriquecida: analisa objeto + plano de trabalho para resultados mais precisos" 
+            : "Busca tradicional por palavras-chave"}
         </Typography>
-        <Tooltip title="Busca semântica usa IA para encontrar resultados por significado, não apenas palavras-chave exatas">
+        <Tooltip title="Busca semântica V3 usa IA para analisar objeto e plano de trabalho, encontrando resultados por significado e contexto completo">
           <FormControlLabel
             control={
               <Switch
@@ -55,7 +63,7 @@ const Busca = ({ onSearch, loading }: BuscaProps) => {
                 disabled={loading}
               />
             }
-            label="Busca Semântica (IA)"
+            label="Busca Semântica V3 (IA)"
           />
         </Tooltip>
       </Box>

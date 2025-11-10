@@ -1,4 +1,5 @@
 from logging.config import fileConfig
+import os
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
@@ -49,7 +50,8 @@ def run_migrations_offline() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
-
+        # Permite sobrescrever a URL via variável de ambiente DATABASE_URL
+        url = os.getenv("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
@@ -68,6 +70,10 @@ def run_migrations_online() -> None:
             connection=connection, target_metadata=target_metadata
         )
 
+        # Permite sobrescrever a URL via variável de ambiente DATABASE_URL
+        db_url = os.getenv("DATABASE_URL")
+        if db_url:
+            config.set_main_option("sqlalchemy.url", db_url)
         with context.begin_transaction():
             context.run_migrations()
 

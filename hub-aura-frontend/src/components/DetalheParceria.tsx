@@ -1,4 +1,5 @@
 import { Box, Typography, Button, Paper, Divider } from '@mui/material';
+import PlanoTrabalho from './PlanoTrabalho';
 
 // Interface que espelha o seu modelo Pydantic 'Parceria'
 interface ParceriaDetalhada {
@@ -8,10 +9,12 @@ interface ParceriaDetalhada {
   cpf_cnpj: string | null;
   razao_social: string | null;
   objeto: string | null;
+  plano_de_trabalho: string | null;
   data_da_assinatura: string | null; 
   data_de_publicacao: string | null;
   vigencia: string | null;
   situacao: string | null;
+  similarity_score?: number | null;
 }
 
 // Propriedades do componente: a parceria e a função para voltar
@@ -28,8 +31,8 @@ const DetalheParceria = ({ parceria, onVoltar }: DetalheParceriaProps) => {
     return new Date(`${data}T00:00:00`).toLocaleDateString('pt-BR');
   };
 
-  const fixEncoding = (s: string | null | undefined) => {
-    if (!s) return s;
+  const fixEncoding = (s: string | null | undefined): string | null => {
+    if (!s) return null;
     try {
       // Mesma técnica usada no ListaResultados para mitigar mojibake
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -46,15 +49,25 @@ const DetalheParceria = ({ parceria, onVoltar }: DetalheParceriaProps) => {
         {fixEncoding(parceria.razao_social) || 'Detalhes da Parceria'}
       </Typography>
       <Typography variant="subtitle1" color="text.secondary">
-        Termo Nº: {parceria.numero_do_termo || 'N/A'}
+        Termo Nº: {parceria.numero_do_termo || 'N/A'}{parceria.ano_do_termo ? `/${parceria.ano_do_termo}` : ''}
       </Typography>
       
       <Divider sx={{ my: 2 }} />
 
       <Box sx={{ my: 2 }}>
         <Typography variant="h6">Objeto do Acordo</Typography>
-  <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>{fixEncoding(parceria.objeto) || 'Não informado.'}</Typography>
+        <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>{fixEncoding(parceria.objeto) || 'Não informado.'}</Typography>
       </Box>
+
+      <PlanoTrabalho planoDeTrabalho={fixEncoding(parceria.plano_de_trabalho)} />
+
+      {parceria.similarity_score && (
+        <Box sx={{ my: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            <strong>Score de Similaridade:</strong> {(parceria.similarity_score * 100).toFixed(2)}%
+          </Typography>
+        </Box>
+      )}
 
       <Box sx={{ my: 2 }}>
         <Typography variant="h6">Detalhes Administrativos</Typography>

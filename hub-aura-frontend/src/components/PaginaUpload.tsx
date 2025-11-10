@@ -7,6 +7,7 @@ import { Box, Button, TextField, Typography, CircularProgress, Alert, Grid } fro
 interface FormData {
   razao_social: string;
   objeto: string;
+  plano_de_trabalho: string;
   cpf_cnpj: string; // Corresponde ao nome da coluna no DB
   ano_do_termo: string; // Mantemos como string no form para facilitar a edição
 }
@@ -42,6 +43,7 @@ const PaginaUpload = () => {
       setFormData({
         razao_social: response.data.razao_social_sugerida,
         objeto: response.data.objeto_sugerido,
+        plano_de_trabalho: '', // Inicia vazio, usuário pode preencher manualmente
         cpf_cnpj: response.data.cnpj_sugerido,
         ano_do_termo: response.data.ano_do_termo_sugerido,
       });
@@ -112,6 +114,20 @@ const PaginaUpload = () => {
             </Grid>
           </Grid>
           <TextField fullWidth margin="normal" label="Objeto do Acordo" name="objeto" multiline rows={10} value={formData.objeto} onChange={handleFormChange} />
+          
+          <TextField 
+            fullWidth 
+            margin="normal" 
+            label="Plano de Trabalho" 
+            name="plano_de_trabalho" 
+            multiline 
+            rows={8} 
+            value={formData.plano_de_trabalho} 
+            onChange={handleFormChange}
+            placeholder="Descreva o plano de trabalho detalhado da parceria, incluindo objetivos, atividades previstas, metodologias e resultados esperados..."
+            helperText="Campo opcional. Enriquece a busca semântica do sistema."
+          />
+          
           <Button variant="contained" color="primary" onClick={handleSave} disabled={isLoading} sx={{ mt: 2 }}> Salvar Parceria </Button>
         </Box>
       )}

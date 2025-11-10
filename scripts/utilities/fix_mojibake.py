@@ -4,11 +4,11 @@ import os
 
 # Configurações de conexão
 conn = psycopg2.connect(
-    host="localhost",
-    port=5432,
-    user="postgres",
-    password="rx1800",
-    dbname="hub_aura_db"
+    host=os.environ.get("PGHOST", "localhost"),
+    port=int(os.environ.get("PGPORT", 5433)),
+    user=os.environ.get("PGUSER", "postgres"),
+    password=os.environ.get("PGPASSWORD", os.environ.get("DB_PASSWORD", "")),
+    dbname=os.environ.get("PGDATABASE", "hub_aura_db"),
 )
 
 # Caminho do CSV original (ajuste se necessário)

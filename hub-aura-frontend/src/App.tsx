@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Container, Typography, Box, Pagination, Button, ButtonGroup } from '@mui/material';
+import { Container, Typography, Box, Pagination, Button, ButtonGroup, AppBar, Toolbar } from '@mui/material';
 import axios from 'axios';
 import { API_BASE_URL } from './config/api';
+import logoAura from './assets/aura-tce-logo.png';
 
 // Importe todos os seus componentes
 import Busca from './components/Busca';
@@ -11,7 +12,7 @@ import PaginaUpload from './components/PaginaUpload'; // 1. Importa o novo compo
 
 // ... (suas interfaces ParceriaResumida e ParceriaDetalhada permanecem as mesmas) ...
 interface ParceriaResumida { id: number; razao_social: string | null; objeto: string | null; ano_do_termo: number | null; }
-interface ParceriaDetalhada { id: number; numero_do_termo: string | null; ano_do_termo: number | null; cpf_cnpj: string | null; razao_social: string | null; objeto: string | null; data_da_assinatura: string | null; data_de_publicacao: string | null; vigencia: string | null; situacao: string | null; }
+interface ParceriaDetalhada { id: number; numero_do_termo: string | null; ano_do_termo: number | null; cpf_cnpj: string | null; razao_social: string | null; objeto: string | null; plano_de_trabalho: string | null; data_da_assinatura: string | null; data_de_publicacao: string | null; vigencia: string | null; situacao: string | null; similarity_score?: number | null; }
 
 const ITENS_POR_PAGINA = 10;
 
@@ -75,7 +76,7 @@ function App() {
     executarBusca(termo, 1, usarSemantica);
   };
 
-  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
     setPaginaAtual(value);
     executarBusca(termoBusca, value, usarBuscaSemantica);
   };
@@ -103,10 +104,29 @@ function App() {
 
 
   return (
-    <Container maxWidth="md">
-      <Typography variant="h3" component="h1" align="center" sx={{ my: 4 }}>
-        HUB Aura - Conhecimento Dinâmico
-      </Typography>
+    <>
+      {/* Header com logo AURA TCE */}
+      <AppBar position="static" sx={{ bgcolor: '#8B0000', mb: 2 }}>
+        <Toolbar sx={{ justifyContent: 'center', py: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <img src={logoAura} alt="AURA TCE" style={{ height: '80px' }} />
+          </Box>
+        </Toolbar>
+      </AppBar>
+
+      <Container maxWidth="md">
+        <Typography 
+          variant="h4" 
+          component="h1" 
+          align="center" 
+          sx={{ 
+            my: 3,
+            color: '#003366',
+            fontWeight: 600
+          }}
+        >
+          Hub de Conhecimento - Instrumentos de Parceria
+        </Typography>
 
       {/* 3. Botões para alternar a visão */}
       <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
@@ -138,7 +158,8 @@ function App() {
       ) : (
         <PaginaUpload />
       )}
-    </Container>
+      </Container>
+    </>
   );
 }
 
