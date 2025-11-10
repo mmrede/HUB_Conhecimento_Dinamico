@@ -1,0 +1,77 @@
+# Documento de Exemplo: Política de Gestão de Documentos
+
+## 1. Objetivo
+
+Esta política estabelece diretrizes e procedimentos para a gestão eficiente de documentos na organização pública, visando garantir a preservação, organização e acessibilidade do conhecimento institucional.
+
+## 2. Escopo
+
+Aplica-se a todos os departamentos e colaboradores da organização que criam, mantêm, utilizam ou descartam documentos relacionados às atividades institucionais.
+
+## 3. Responsabilidades
+
+### 3.1 Gestores de Departamento
+- Garantir que suas equipes sigam as políticas de gestão de documentos
+- Revisar periodicamente a classificação e arquivamento de documentos
+- Aprovar o descarte de documentos conforme cronograma estabelecido
+
+### 3.2 Colaboradores
+- Criar e manter documentos conforme padrões estabelecidos
+- Classificar adequadamente todos os documentos produzidos
+- Atualizar documentos quando necessário
+
+### 3.3 Equipe de Gestão de Conhecimento
+- Manter o sistema de gestão de conhecimento atualizado
+- Treinar colaboradores em boas práticas
+- Auditar periodicamente o cumprimento desta política
+
+## 4. Procedimentos
+
+### 4.1 Criação de Documentos
+Todos os documentos devem incluir:
+- Título descritivo
+- Data de criação
+- Autor ou responsável
+- Departamento de origem
+- Categoria apropriada
+- Tags relevantes para facilitar busca
+
+### 4.2 Classificação
+Os documentos devem ser classificados em uma das seguintes categorias:
+- Administrativo
+- Jurídico
+- Financeiro
+- Recursos Humanos
+- Operacional
+- Planejamento Estratégico
+- Tecnologia
+- Compliance
+
+### 4.3 Armazenamento
+- Documentos digitais devem ser armazenados no sistema centralizado
+- Documentos físicos devem ser digitalizados quando possível
+- Backup regular deve ser realizado
+
+### 4.4 Acesso
+- Definir níveis de acesso apropriados
+- Documentar solicitações de acesso
+- Revisar permissões periodicamente
+
+### 4.5 Retenção e Descarte
+- Seguir cronograma de retenção estabelecido
+- Descartar documentos obsoletos conforme procedimentos
+- Manter registro de documentos descartados
+
+## 5. Monitoramento
+
+Esta política será revisada anualmente e atualizada conforme necessário para refletir mudanças na legislação e melhores práticas.
+
+## 6. Conformidade
+
+O não cumprimento desta política pode resultar em ações disciplinares conforme regulamento interno.
+
+---
+
+**Aprovado por:** Diretor de Administração  
+**Data de Vigência:** 10/01/2025  
+**Próxima Revisão:** 10/01/2026

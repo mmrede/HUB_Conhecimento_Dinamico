@@ -1,0 +1,79 @@
+# Configuration for Dynamic Knowledge Hub
+# Configuração para Hub de Conhecimento Dinâmico
+
+# Database Configuration
+database:
+  type: postgresql
+  host: localhost
+  port: 5432
+  name: knowledge_hub
+  user: admin
+  # password should be set via environment variable: DB_PASSWORD
+
+# Elasticsearch Configuration
+elasticsearch:
+  host: localhost
+  port: 9200
+  index_prefix: knowledge_hub
+  # api_key should be set via environment variable: ES_API_KEY
+
+# Knowledge Processing
+processing:
+  # Language for NLP processing
+  language: pt  # Portuguese
+  # Minimum confidence threshold for knowledge extraction
+  confidence_threshold: 0.7
+  # Maximum document size in MB
+  max_document_size_mb: 50
+  # Supported file formats
+  supported_formats:
+    - pdf
+    - docx
+    - txt
+    - csv
+    - json
+    - xml
+
+# Knowledge Categorization
+categorization:
+  # Auto-tagging enabled
+  auto_tagging: true
+  # Maximum number of tags per document
+  max_tags_per_document: 10
+  # Categories for public sector knowledge
+  categories:
+    - administrative
+    - legal
+    - financial
+    - human_resources
+    - operations
+    - strategic_planning
+    - technology
+    - compliance
+
+# Search Configuration
+search:
+  # Results per page
+  results_per_page: 20
+  # Maximum results to return
+  max_results: 1000
+  # Enable fuzzy search
+  fuzzy_search: true
+  # Fuzzy search distance
+  fuzzy_distance: 2
+
+# Analytics
+analytics:
+  # Enable usage analytics
+  enabled: true
+  # Analytics retention in days
+  retention_days: 365
+  # Generate insights automatically
+  auto_insights: true
+
+# API Configuration
+api:
+  host: 0.0.0.0
+  port: 5000
+  debug: false
+  # API key should be set via environment variable: API_KEY
