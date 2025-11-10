@@ -123,7 +123,7 @@ hub_aura/
 
 ## 📝 Licença
 
-[Incluir informação de licença]
+GPL v3
 
 ## 👥 Contribuição
 
